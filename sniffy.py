@@ -35,7 +35,20 @@ def packet(data):
 def ipv4(addr):
 	return '.'.join(map(str, addr))
 
+def icmp_packet(data):
+	itype, code, checksum = struct.unpack('1 B B H', data[:4])
+	return itype, code, checksum, data[4:]
 
+def tcp_packet(data):
+	src_port, dest_port, sequence, aknowledge, reserved_fags = struct.unpack('! H H L L H', data[:14])
+	offset = (reserved_fags >> 12) * 4
+	fag_urg = (reserved_fags & 32) >> 5
+	fag_ack = (reserved_fags & 32) >> 4
+	fag_psh = (reserved_fags & 8) >> 3
+	fag_syn = (reserved_fags & 2) >> 1
+	fag_fin = reserved_fags & 1
+	fag_rst = (reserved_fags & 4) >> 2
+	return src_port, dest_port, sequence, aknowledge, reserved_fags, fag_urg, fag_ack, fag_psh, fag_syn, fag_fin, fag_rst, data[offset:]
 
 try:
 	main()
