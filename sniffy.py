@@ -2,7 +2,9 @@
 
 import struct
 import socket
+import textwrap
 #import scapy.all
+
 
 TAB_1 = '\t - '
 TAB_2 = '\t\t - '
@@ -31,10 +33,10 @@ def main():
 		raw_data , addr = s.recvfrom(65536)
 		d_mac , s_mac , eth_proto , data = unpack_frame(raw_data)
 		print('\nEthernet frame')
-		print(TAB_1 + 'Destination: {}, source: {}, protocol: {}, data: {}'.format(d_mac , s_mac , eth_proto , data) ) #yes I know I should make data readable, go fuck yourself
+		print(TAB_1 + 'Destination: {}, source: {}, protocol: {}'.format(d_mac , s_mac , eth_proto) ) #yes I know I should make data readable, go fuck yourself
 		
 		if (eth_proto == 8):
-			(target, version, headerL, ttl, src, data, proto) = packet(data)		
+			(version, headerL, ttl, proto, src, target, data) = packet(data)		
 			print(TAB_1 + 'IPv4')
 			print(TAB_2 + 'version: {}, Header Length: {}, TTL: {}, source: {}, protocol: {}, target: {}'.format(version, headerL, ttl, src, proto, target))
 
@@ -52,11 +54,11 @@ def packet(data):
 	vsl = data[0] #version header length
 	version = vsl >> 4 #shifts brotien by bits to the right, somehow giving the result of left. yea i dont really get it
 	headerL = (vsl & 15) * 4 #so anyways where bro ends is where data starts. dont ask me what the fuck happening here
-	ttl , proto , src , target = struct.unpack('! 8x B B 2x 4s 4s', data[:20])
-	return  ttl , proto , src , target, version, headerL, data[headerL:]
+	ttl , proto , src , target = struct.unpack('! 8x B B 2x 4s 4s', data[:20]) #8x B B 2x 4s 4s
+	return version, headerL, ttl, proto, ipv4_packet(src), ipv4_packet(target), data[headerL:]
 
 #get the damn protocol and source readable, spoiled fucking children
-def ipv4(addr):
+def ipv4_packet(addr):
 	return '.'.join(map(str, addr))
 
 def icmp_packet(data):
