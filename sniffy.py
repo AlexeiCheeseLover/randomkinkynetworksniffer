@@ -4,6 +4,16 @@ import struct
 import socket
 #import scapy.all
 
+TAB_1 = '\t - '
+TAB_2 = '\t\t - '
+TAB_3 = '\t\t\t - '
+TAB_4 = '\t\t\t\t - '
+
+DATA_TAB_1 = '\t  '
+DATA_TAB_2 = '\t\t '
+DATA_TAB_3 = '\t\t\t '
+DATA_TAB_4 = '\t\t\t\t '
+
 #unpack ethernet frame
 def unpack_frame(data):
 	d_mac , s_mac , proto = struct.unpack('! 6s 6s H', data[:14])
@@ -21,7 +31,21 @@ def main():
 		raw_data , addr = s.recvfrom(65536)
 		d_mac , s_mac , eth_proto , data = unpack_frame(raw_data)
 		print('\nEthernet frame')
-		print('Destination: {}, source: {}, protocol: {}, data: {}'.format(d_mac , s_mac , eth_proto , data) ) #yes I know I should make data readable, go fuck yourself
+		print(TAB_1 + 'Destination: {}, source: {}, protocol: {}, data: {}'.format(d_mac , s_mac , eth_proto , data) ) #yes I know I should make data readable, go fuck yourself
+		
+		if (eth_proto == 8):
+			(target, version, headerL, ttl, src, data, proto) = packet(data)		
+			print(TAB_1 + 'IPv4')
+			print(TAB_2 + 'version: {}, Header Length: {}, TTL: {}, source: {}, protocol: {}, target: {}'.format(version, headerL, ttl, src, proto, target))
+
+			if (proto == 1):
+				print("sup twin")
+
+				#icmp
+			elif (proto == 2):
+				#good question
+				print("hi again")
+
 
 # WE MAKING THE DATA READABLE
 def packet(data):
@@ -29,7 +53,7 @@ def packet(data):
 	version = vsl >> 4 #shifts brotien by bits to the right, somehow giving the result of left. yea i dont really get it
 	headerL = (vsl & 15) * 4 #so anyways where bro ends is where data starts. dont ask me what the fuck happening here
 	ttl , proto , src , target = struct.unpack('! 8x B B 2x 4s 4s', data[:20])
-	return  ttl , ipv4(proto) , ipv4(src) , target, version, headerL, data[headerL:]
+	return  ttl , proto , src , target, version, headerL, data[headerL:]
 
 #get the damn protocol and source readable, spoiled fucking children
 def ipv4(addr):
@@ -49,6 +73,20 @@ def tcp_packet(data):
 	fag_fin = reserved_fags & 1
 	fag_rst = (reserved_fags & 4) >> 2
 	return src_port, dest_port, sequence, aknowledge, reserved_fags, fag_urg, fag_ack, fag_psh, fag_syn, fag_fin, fag_rst, data[offset:]
+
+def udp_packet(data):
+	src_port, dest_port, size = struct.unpack('! H H 2x H', data[:8])
+	return src_port, dest_port, size, data[8:]
+
+# multi-line data? think again
+def multi_nolonger(prefix, string, size=80):
+	size -= len(prefix)
+	if isinstance(string, bytes):
+		string = ''.join(r'\x{:02x}'.format(byte) for byte in string)
+		if size % 2:
+			size -= 1
+	return '\n'.join([prefix + line for line in textwrap.wrap(string, size)])
+
 
 try:
 	main()
